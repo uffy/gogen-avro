@@ -320,7 +320,14 @@ writer:
 		} else if unionReader, ok := reader.(*schema.UnionField); ok {
 			// If the reader is also a union, read into the first supported type
 			for readerIndex, r := range unionReader.AvroTypes() {
-				if t.IsReadableBy(r, make(map[schema.QualifiedName]interface{})) {
+				skip := false
+				if tr, ok := t.(*schema.Reference); ok {
+					if rr, ok := r.(*schema.Reference); ok {
+						skip = tr.TypeName.Name != rr.TypeName.Name
+					}
+				}
+
+				if t.IsReadableBy(r, make(map[schema.QualifiedName]interface{})) && !skip {
 					p.addSwitchCase(switchId, i, readerIndex)
 					if _, ok := t.(*schema.NullField); ok {
 						p.addLiteral(vm.SetExitNull, vm.NoopField)
